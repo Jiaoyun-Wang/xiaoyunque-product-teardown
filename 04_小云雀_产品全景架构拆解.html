@@ -1,0 +1,314 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>小云雀｜产品全景架构拆解</title><style>
+:root{--bg:#f3f1ec;--paper:#fff;--ink:#20231f;--muted:#687068;--line:#d8d7d0;--dark:#252925;--green:#286149;--amber:#936118;--red:#a5433a;--blue:#315f8b;--purple:#705790}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.67 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}main{max-width:1550px;margin:auto;padding:34px 26px 90px}h1{font-size:35px;margin:0 0 4px}h2{font-size:24px;margin:43px 0 14px}h3{font-size:19px;margin:22px 0 9px}.sub,.muted{color:var(--muted)}.panel,.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:19px;margin:13px 0}.summary{border-left:6px solid var(--green);font-size:17px}.badge{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:750;margin:2px}.fact{background:#e4f2e8;color:var(--green)}.infer{background:#fff0d3;color:var(--amber)}.suggest{background:#e5edf7;color:var(--blue)}.unknown{background:#f6e4e2;color:var(--red)}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}table{border-collapse:collapse;width:100%;min-width:1200px;table-layout:fixed}th{background:var(--dark);color:#fff;text-align:left;padding:12px}td{vertical-align:top;border-top:1px solid var(--line);border-right:1px solid #ecebe6;padding:11px;overflow-wrap:anywhere;word-break:break-word;white-space:normal}td:last-child,th:last-child{border-right:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.layer{border-left:5px solid var(--purple)}.mermaid{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;overflow:auto;margin:14px 0}.risk-high{border-left:5px solid var(--red)}.risk-med{border-left:5px solid var(--amber)}ul,ol{padding-left:22px;margin:7px 0}code{background:#eeeee9;padding:1px 5px;border-radius:4px}.legend{display:flex;gap:10px;flex-wrap:wrap}.legend span{padding:5px 10px;border-radius:7px;background:#fff;border:1px solid var(--line)}@media(max-width:900px){main{padding:20px 13px}.grid2,.grid3{grid-template-columns:1fr}}</style></head><body><main>
+<h1>小云雀产品全景架构拆解</h1><p class="sub">Step 4｜综合用户旅程、Agent 契约与短剧 Agent 2.0 功能等价 Prompt｜2026-08-18</p>
+
+<h2>1. 一句话总结</h2><div class="panel summary">小云雀当前可被证实为一个以多场景创作入口、对话式创作、短剧工作台、节点画布、历史与资产管理为表层能力的 AI 视频创作产品；其真实 Agent 编排、生成服务、模型路由、任务队列与质量治理均缺少执行证据，只能作为待验证能力或建议架构呈现。</div>
+
+<h2>2. 证据来源与缺口</h2><div class="grid2"><div class="panel"><h3><span class="badge fact">直接证据</span></h3><ul><li>E01–E03：首页入口、自然语言输入、素材引用、技能、偏好与生成按钮。</li><li>E04：短剧 Agent 2.0、剧本输入限制、四种工作入口、Seedance 2.5 宣传语。</li><li>E05–E06：自由画布自动建项、保存状态、节点类型、综合助手、比例和分辨率。</li><li>E07–E09：历史 0 条、未命名项目、作品资产空状态与资产分类。</li><li>E10–E11：余额可见，但生成、失败、预览与交付无证据。</li></ul></div><div class="panel"><h3><span class="badge unknown">核心缺口</span></h3><ul><li>没有真实用户消息、Agent 回复、规划摘要或工具执行。</li><li>没有成功、失败、余额不足、安全拦截、中断和重试样本。</li><li>没有剧本解析结果、角色/场景/分镜、图片、视频、音频资产。</li><li>没有模型调用参数、队列、扣费、版本、质量评估和发布记录。</li><li>无法确认 4 个 Agent 名称是否对应独立后端 Agent。</li></ul></div></div>
+
+<h2>3. 核心功能域</h2><div class="table-wrap"><table><thead><tr><th>功能域</th><th>用户价值</th><th>可见能力</th><th>关键对象</th><th>证据等级</th></tr></thead><tbody>
+<tr><td>通用创作入口</td><td>用自然语言和素材启动视频创作</td><td>输入、上传、@引用、技能、智能匹配、创作偏好、画布开关</td><td>请求、素材引用、技能、偏好</td><td><span class="badge fact">事实</span>E01–E03</td></tr>
+<tr><td>短剧创作</td><td>从剧本或模板路径创建整部短剧</td><td>上传/粘贴剧本、剧本创作、自由画布、重制转绘</td><td>剧本、项目、集数候选</td><td><span class="badge fact">入口事实</span>E04</td></tr>
+<tr><td>营销创作</td><td>面向商品或营销内容</td><td>营销 Agent 入口、商品图示例文案、商品资产分类</td><td>商品、营销请求</td><td><span class="badge fact">入口事实</span><span class="badge infer">流程推断</span>E01,E02,E09</td></tr>
+<tr><td>节点画布</td><td>以角色、场景、媒体节点组织创作</td><td>角色、场景、3D导演台、视频、图片、文本、音频节点；综合助手</td><td>画布、节点、边、项目资产</td><td><span class="badge fact">事实</span>E05–E06</td></tr>
+<tr><td>资产管理</td><td>检索和复用作品、上传、角色、商品、画布</td><td>分类、搜索、排序、视图、添加</td><td>资产、资产分类、引用</td><td><span class="badge fact">事实</span>E09</td></tr>
+<tr><td>历史与项目</td><td>恢复和查找任务</td><td>Agent 筛选、生成ID搜索、刷新、首页历史侧栏</td><td>生成记录、项目、画布</td><td><span class="badge fact">事实</span>E07–E08</td></tr>
+<tr><td>计费与会员</td><td>管理可用额度</td><td>余额 60、会员入口</td><td>余额、套餐、计费记录</td><td><span class="badge fact">界面事实</span><span class="badge unknown">规则未知</span>E10</td></tr>
+</tbody></table></div>
+
+<h2>4. 端到端流程表</h2><p class="muted">以“用户从短剧入口上传剧本并希望生成整部剧”为目标任务；没有执行记录的步骤均明确标注。</p><div class="table-wrap"><table><thead><tr><th>步骤</th><th>触发</th><th>处理者</th><th>读取</th><th>判断</th><th>工具/服务</th><th>结果</th><th>状态写入</th><th>确认/交接/失败</th></tr></thead><tbody>
+<tr><td>1 选择短剧入口</td><td>点击“短剧 Agent”</td><td>导航/短剧模块</td><td>当前登录状态</td><td>无可见判断</td><td>页面路由</td><td>显示短剧 Agent 2.0</td><td>无已确认写入</td><td><span class="badge fact">事实</span>E01,E04</td></tr>
+<tr><td>2 选择起点</td><td>上传剧本/剧本创作/自由画布/重制转绘</td><td>短剧 Agent 型界面</td><td>用户选择</td><td>入口模式</td><td>仅有页面入口</td><td>进入对应路径</td><td>未知</td><td><span class="badge fact">入口事实</span>E04</td></tr>
+<tr><td>3 校验剧本</td><td>上传或粘贴</td><td>A02 候选</td><td>文件/文本</td><td>格式、≤10万字、版权</td><td>&lt;解析剧本工具&gt;</td><td>结构化剧本候选</td><td>script version 候选</td><td><span class="badge fact">限制事实</span><span class="badge suggest">执行建议</span></td></tr>
+<tr><td>4 建立项目</td><td>用户确认建项</td><td>项目服务候选</td><td>剧本、标题、入口</td><td>是否重复项目</td><td>&lt;创建项目工具&gt;</td><td>project_id</td><td>project/status</td><td><span class="badge suggest">建议</span> 画布入口目前无确认 E05</td></tr>
+<tr><td>5 参数与费用确认</td><td>准备生成</td><td>Agent/计费服务候选</td><td>比例、分辨率、余额、规则</td><td>余额充足？用户确认？</td><td>&lt;余额与计费工具&gt;</td><td>预计消耗/确认记录</td><td>confirmation/billing context</td><td><span class="badge unknown">现状未知</span></td></tr>
+<tr><td>6 生成执行</td><td>用户明确确认</td><td>生成编排候选</td><td>已确认剧本与配置</td><td>模型/能力选择</td><td>&lt;短剧生成工具&gt;</td><td>异步 task_id</td><td>task running</td><td><span class="badge unknown">无执行证据</span></td></tr>
+<tr><td>7 等待与回写</td><td>运行时事件</td><td>任务服务候选</td><td>task_id</td><td>成功/失败/中断</td><td>&lt;查询任务与资产工具&gt;</td><td>资产引用或错误</td><td>task/asset/error</td><td><span class="badge suggest">架构建议</span></td></tr>
+<tr><td>8 验证结果</td><td>工具返回成功</td><td>Agent/评估服务候选</td><td>剧本、资产、状态</td><td>存在性、一致性、质量</td><td>校验器候选</td><td>validation report</td><td>evaluation context</td><td><span class="badge suggest">建议</span></td></tr>
+<tr><td>9 用户确认/修改</td><td>预览结果</td><td>用户+界面</td><td>视频/版本</td><td>满意？局部修改？</td><td>局部重算候选</td><td>确认或新版本</td><td>confirmation/version</td><td><span class="badge unknown">未观察</span></td></tr>
+<tr><td>10 交付</td><td>验证与确认通过</td><td>资产/剪辑/发布能力候选</td><td>最终资产引用</td><td>可下载/剪辑/发布？</td><td>未知</td><td>最终成品</td><td>completed</td><td><span class="badge unknown">未观察</span></td></tr>
+</tbody></table></div>
+
+<h2>5. 九层架构</h2><div class="grid3">
+<div class="card layer"><h3>1 用户与渠道层</h3><p>Web 登录用户、在线客服、会员入口。</p><span class="badge fact">事实</span>E01,E10</div>
+<div class="card layer"><h3>2 交互/工作台层</h3><p>首页对话输入、短剧工作台、自由画布、历史、资产、学习中心。</p><span class="badge fact">事实</span>E01–E09</div>
+<div class="card layer"><h3>3 产品应用层</h3><p>通用创作、短剧、营销、技能、示例/模板、项目与资产管理。</p><span class="badge fact">表面事实</span></div>
+<div class="card layer"><h3>4 Agent/工作流层</h3><p>可见名称：全能创作Agent、短剧 Agent 2.0、营销 Agent、综合助手。真实编排关系未知。</p><span class="badge unknown">实现未知</span></div>
+<div class="card layer"><h3>5 工具/服务层</h3><p>上传解析、建项保存、节点管理、历史查询、资产搜索；生成/计费/校验为候选能力。</p><span class="badge fact">部分事实</span><span class="badge infer">部分推断</span></div>
+<div class="card layer"><h3>6 模型集成/路由层</h3><p>页面出现 Seedance 2.5 与“智能匹配”；真实模型调用、路由和降级未知。</p><span class="badge fact">名称事实</span><span class="badge unknown">调用未知</span></div>
+<div class="card layer"><h3>7 全局上下文/数据层</h3><p>项目/画布ID、标题、保存状态、比例、分辨率、历史与资产对象；统一状态源未知。</p><span class="badge fact">部分事实</span></div>
+<div class="card layer"><h3>8 知识/共享资产层</h3><p>技能、风格库、示例、精选作品、用户资产库；提示词模板与专业知识未知。</p><span class="badge fact">入口事实</span></div>
+<div class="card layer"><h3>9 基础设施/治理层</h3><p>鉴权、对象存储、异步队列、观测、审计、安全、版权、计费一致性是所需能力；厂商与技术栈不可确认。</p><span class="badge suggest">能力建议</span></div>
+</div>
+
+<h2>6. Agent—工具—上下文关系</h2><div class="table-wrap"><table><thead><tr><th>Agent/入口</th><th>读取候选</th><th>工具/服务</th><th>写入候选</th><th>下游/交接</th><th>能力边界</th></tr></thead><tbody>
+<tr><td>全能创作Agent</td><td>首页请求、素材、技能、偏好</td><td>无确认工具</td><td>生成记录候选</td><td>未知</td><td>仅历史筛选出现名称</td></tr>
+<tr><td>短剧 Agent 2.0</td><td>剧本、入口模式、项目参数候选</td><td>剧本上传/粘贴入口；其他工具均未知</td><td>项目/剧本/任务候选</td><td>自由画布候选</td><td>不能确认角色、场景、分镜、视频由其执行</td></tr>
+<tr><td>营销 Agent</td><td>商品图/商品资产候选</td><td>无确认工具</td><td>未知</td><td>未知</td><td>只确认入口</td></tr>
+<tr><td>画布综合助手</td><td>对话、素材、技能、画布、比例与分辨率</td><td>建画布/保存由页面服务确认；节点工具未执行</td><td>画布节点/资产候选</td><td>节点能力候选</td><td>不能把按钮当工具调用</td></tr>
+</tbody></table></div>
+
+<h2>7. 全局上下文架构</h2><div class="table-wrap"><table><thead><tr><th>上下文域</th><th>已观察字段/对象</th><th>建议补全</th><th>生命周期与一致性</th><th>等级</th></tr></thead><tbody>
+<tr><td>UserContext</td><td>登录态、界面语言候选、余额60、会员入口</td><td>plan、permissions、private_asset_scope</td><td>账户级；不得进入公开模板数据</td><td>部分事实/部分建议</td></tr>
+<tr><td>ProjectConfig</td><td>project_id、canvas_id、title、9:16、720P/2K</td><td>entry_mode、model_policy、confirmed_version</td><td>项目级，版本化</td><td>部分事实</td></tr>
+<tr><td>DomainContent</td><td>剧本输入、集数卡片</td><td>episode/scene/shot/character/environment/prop/dialogue</td><td>内容版本变化触发依赖失效</td><td>入口事实/结构建议</td></tr>
+<tr><td>ReusableIdentity</td><td>角色资产分类与@引用入口</td><td>character_id、face/voice refs、consent</td><td>用户私有、稳定引用</td><td>入口事实/字段未知</td></tr>
+<tr><td>TaskDecomposition</td><td>无</td><td>workflow/task/dependency/status</td><td>异步执行与局部重算基础</td><td>建议</td></tr>
+<tr><td>AssetContext</td><td>作品/历史上传/角色/商品/画布，当前空</td><td>asset_id/version/type/source/owner/hash/status</td><td>不可变版本+可变 current 指针</td><td>分类事实/协议建议</td></tr>
+<tr><td>WorkflowState</td><td>画布“已保存”、历史0条</td><td>waiting_input→completed 状态历史</td><td>统一状态源，所有页面投影</td><td>部分事实/建议</td></tr>
+<tr><td>BillingContext</td><td>余额60</td><td>estimate/freeze/settle/refund/rule_version</td><td>与幂等任务ID原子关联</td><td>值事实/规则未知</td></tr>
+<tr><td>EvaluationContext</td><td>“AI可能会犯错，请核查”提示</td><td>存在性、脚本一致、角色连续、时长、风格、音画同步</td><td>完成门之前必须通过</td><td>提示事实/评估建议</td></tr>
+</tbody></table></div>
+
+<h2>8. 知识与共享资产架构</h2><div class="table-wrap"><table><thead><tr><th>知识/资产域</th><th>当前证据</th><th>读取方式候选</th><th>隔离/治理要求</th><th>结论</th></tr></thead><tbody>
+<tr><td>项目数据</td><td>项目/画布ID、标题、保存状态</td><td>项目上下文读取</td><td>按项目隔离、版本化</td><td><span class="badge fact">部分事实</span></td></tr>
+<tr><td>专业影视知识</td><td>3D导演台、短剧与节点概念</td><td>知识检索或 Prompt 模板候选</td><td>版本、来源与可追踪性</td><td><span class="badge unknown">实现未知</span></td></tr>
+<tr><td>技能/风格/模板</td><td>推荐技能、风格库、示例/精选作品</td><td>技能配置映射到参数/提示词候选</td><td>技能版本与模型兼容性</td><td><span class="badge fact">入口事实</span></td></tr>
+<tr><td>模型能力知识</td><td>Seedance 2.5、智能匹配、720P/2K</td><td>能力注册表与路由策略候选</td><td>时长、分辨率、成本与下线策略</td><td><span class="badge fact">名称事实</span><span class="badge unknown">规则未知</span></td></tr>
+<tr><td>安全/版权/计费规则</td><td>版权提醒、余额和会员入口</td><td>执行前策略服务候选</td><td>强制执行、版本化、审计</td><td><span class="badge fact">提示事实</span></td></tr>
+<tr><td>用户私有资产</td><td>角色、商品、上传与画布分类</td><td>授权引用</td><td>租户隔离、最小权限、引用可撤销</td><td><span class="badge fact">入口事实</span></td></tr>
+<tr><td>平台公共资产</td><td>精选作品、示例项目</td><td>模板复用候选</td><td>版权、来源、可商用范围</td><td><span class="badge fact">展示事实</span></td></tr>
+<tr><td>反馈与模型表现</td><td>无</td><td>评估/反馈事件候选</td><td>去标识化、用途透明、版本对照</td><td><span class="badge unknown">未知</span></td></tr>
+</tbody></table></div>
+
+<h2>9. 模型集成与路由</h2><div class="panel"><p><span class="badge fact">确认</span> 页面出现 Seedance 2.5、智能匹配、视频720P、图片2K。</p><p><span class="badge unknown">不可确认</span> 是否还使用文本、图片、语音、视频理解或安全模型；是否存在多模型路由、回退、并发限制、缓存和供应商。</p><p><span class="badge suggest">建议</span> 建立能力注册表，以任务类型、输入模态、时长、比例、分辨率、成本、延迟、安全等级、地区与模型版本进行路由；每次调用写入 model_invocation 并与 task_id、billing_record、asset_version 关联。</p></div>
+
+<h2>10. 技术能力与选型表</h2><div class="table-wrap"><table><thead><tr><th>所需能力</th><th>可选实现</th><th>建议</th><th>理由</th><th>为何不能确认现状</th></tr></thead><tbody>
+<tr><td>身份与租户隔离</td><td>会话鉴权、RBAC/ABAC</td><td>项目与资产按 tenant/user 授权</td><td>保护私有角色、商品和上传</td><td>仅看到登录态</td></tr>
+<tr><td>工作流编排</td><td>持久状态机、事件驱动编排</td><td>可恢复工作流+显式确认事件</td><td>支持长任务、中断、重试与局部重算</td><td>无任务执行证据</td></tr>
+<tr><td>异步任务</td><td>队列+worker+事件总线</td><td>任务ID、幂等键、取消令牌、重试策略</td><td>视频生成耗时长且可能扣费</td><td>无排队页面</td></tr>
+<tr><td>结构化数据</td><td>关系型/文档型存储</td><td>项目、版本、引用和状态采用强一致元数据</td><td>避免聊天/画布/资产冲突</td><td>后端不可见</td></tr>
+<tr><td>媒体资产</td><td>对象存储+CDN+转码</td><td>不可变资产版本、内容哈希、生命周期策略</td><td>支持大文件与复用</td><td>无实际资产</td></tr>
+<tr><td>画布图</td><td>节点/边模型、图查询</td><td>稳定 node_id、typed edges、dependency graph</td><td>实现引用与失效传播</td><td>仅见空画布</td></tr>
+<tr><td>模型路由</td><td>能力注册表、策略引擎、网关</td><td>版本化路由并记录选择依据摘要</td><td>管理能力、成本与降级</td><td>只见模型名和智能匹配</td></tr>
+<tr><td>计费</td><td>预估/冻结/结算/退款账本</td><td>与幂等 task_id 原子绑定</td><td>避免失败重复扣费</td><td>只见余额</td></tr>
+<tr><td>质量评估</td><td>规则校验+模型评估+人工确认</td><td>资产存在性为硬门，质量为分项报告</td><td>防止口头完成</td><td>无结果</td></tr>
+<tr><td>可观测与审计</td><td>日志、指标、追踪、审计事件</td><td>贯穿 request/project/task/tool/model/asset/billing IDs</td><td>定位跨层冲突</td><td>后端不可见</td></tr>
+</tbody></table></div>
+
+<h2>11. 数据实体与 ER 图</h2><div class="panel"><span class="badge suggest">建议数据模型</span> 下图是构建同类产品所需的语义模型，不代表小云雀真实数据库。</div><div class="mermaid">
+erDiagram
+  USER ||--o{ PROJECT : owns
+  USER ||--o{ USER_ASSET : owns
+  PROJECT ||--o{ CONVERSATION : contains
+  PROJECT ||--o{ SCRIPT_VERSION : versions
+  PROJECT ||--o{ CANVAS : has
+  CANVAS ||--o{ CANVAS_NODE : contains
+  CANVAS_NODE }o--o{ ASSET_VERSION : references
+  PROJECT ||--o{ WORKFLOW_RUN : executes
+  WORKFLOW_RUN ||--o{ TASK : decomposes
+  TASK ||--o{ AGENT_RUN : controlled_by
+  AGENT_RUN ||--o{ TOOL_CALL : invokes
+  TOOL_CALL ||--o{ MODEL_INVOCATION : may_trigger
+  TOOL_CALL ||--o{ ASSET_VERSION : produces
+  ASSET ||--o{ ASSET_VERSION : versions
+  PROJECT ||--o{ ASSET : contains
+  PROJECT ||--o{ USER_CONFIRMATION : records
+  TASK ||--o{ ERROR_EVENT : emits
+  TASK ||--o{ BILLING_RECORD : charges
+  ASSET_VERSION ||--o{ EVALUATION : evaluated_by
+  PROJECT ||--o{ FEEDBACK : receives
+  USER { string user_id }
+  PROJECT { string project_id string title string status int version }
+  SCRIPT_VERSION { string script_version string source_ref int word_count string status }
+  CANVAS { string canvas_id string save_status }
+  CANVAS_NODE { string node_id string node_type string version }
+  WORKFLOW_RUN { string workflow_id string state string request_id }
+  TASK { string task_id string type string state }
+  AGENT_RUN { string agent_run_id string visible_agent_name string state }
+  TOOL_CALL { string tool_call_id string functional_name string status string idempotency_key }
+  MODEL_INVOCATION { string invocation_id string model_ref string status }
+  ASSET { string asset_id string type string owner_scope }
+  ASSET_VERSION { string asset_version string uri_ref string status string content_hash }
+  USER_CONFIRMATION { string confirmation_id string action string input_version string choice }
+  BILLING_RECORD { string billing_id string phase decimal amount string rule_version }
+  ERROR_EVENT { string error_id string type string visible_message }
+  EVALUATION { string evaluation_id boolean passed string checks }
+</div>
+
+<h2>12. 端到端时序图</h2><div class="mermaid">
+sequenceDiagram
+  actor U as 用户
+  participant UI as 短剧工作台/画布
+  participant A as 短剧 Agent 2.0
+  participant C as 全局上下文/状态源
+  participant T as 工具与任务服务
+  participant M as 模型能力/路由
+  participant S as 资产存储
+  participant B as 计费服务
+  U->>UI: 选择短剧入口并上传/粘贴剧本【事实】
+  UI->>A: entry_mode + script【推断接口】
+  A->>A: 校验格式、≤10万字、版权【部分事实】
+  A->>C: 写入剧本版本/计划【建议】
+  A-->>U: 展示参数、影响与预计费用【建议确认门】
+  alt 用户确认
+    U->>A: confirm(action,input_version)
+    A->>B: 查询余额/预估/冻结【建议】
+    B-->>A: 余额与计费结果
+    alt 余额充足
+      A->>T: 以幂等 request_id 发起任务【建议】
+      T->>M: 路由模型调用【未知实现】
+      M-->>T: 异步运行结果
+      T-->>A: task event + asset refs
+      A->>S: 验证资产存在
+      S-->>A: asset versions/status
+      A->>C: 回写任务、资产、计费、验证状态
+      A-->>UI: 显示预览/状态【未知页面】
+      alt 用户满意
+        U->>A: 确认结果
+        A->>C: 写入完成与确认
+        A-->>UI: 交付/剪辑入口【未知】
+      else 用户修改
+        U->>A: 局部修改
+        A->>C: 新版本 + 下游 stale【建议】
+        A->>T: 仅重算受影响任务【建议】
+      end
+    else 余额不足
+      A-->>U: 停止并说明不足【未知现状/建议】
+    end
+  else 用户中断
+    U->>A: interrupt
+    A->>T: 停止新调用/尝试取消【建议】
+    A->>C: 写入 interrupted
+  end
+  opt 工具或模型失败
+    T-->>A: error + charge_state
+    A->>C: 记录错误
+    A-->>U: 可重试条件与后续选项
+  end
+</div>
+
+<h2>13. 产品全景架构图</h2><div class="legend"><span>绿色实线：页面事实</span><span>橙色虚线：合理推断</span><span>蓝色点线：建议架构</span><span>红色：验证缺口/风险</span></div><div class="mermaid">
+flowchart TB
+  subgraph L1["1 用户与渠道层"]
+    U["已登录用户"]:::confirmed
+    CS["在线客服/会员入口"]:::confirmed
+  end
+  subgraph L2["2 交互与工作台层"]
+    HOME["首页创作输入"]:::confirmed
+    DRAMA["短剧 Agent 2.0 页面"]:::confirmed
+    CANVAS["自由画布 + 综合助手"]:::confirmed
+    HIST["历史记录"]:::confirmed
+    ASSETUI["资产库"]:::confirmed
+  end
+  subgraph L3["3 产品应用层"]
+    CREATE["通用创作"]:::confirmed
+    SHORT["短剧创作"]:::confirmed
+    MKT["营销创作"]:::confirmed
+    SKILL["技能/风格/模板"]:::confirmed
+    PROJECT["项目与画布管理"]:::confirmed
+  end
+  subgraph L4["4 Agent/工作流层"]
+    A1["全能创作Agent（仅名称）"]:::gap
+    A2["短剧 Agent 2.0"]:::confirmed
+    A3["营销 Agent（仅入口）"]:::gap
+    A4["综合助手"]:::confirmed
+    ORCH["可恢复工作流/确认门"]:::suggested
+  end
+  subgraph L5["5 工具与服务层"]
+    PARSE["剧本上传/解析"]:::inferred
+    PROJSVC["项目/画布创建与保存"]:::confirmed
+    NODE["节点管理"]:::inferred
+    GEN["图片/视频/音频生成"]:::gap
+    QUERY["历史/资产查询"]:::confirmed
+    VALIDATE["跨页面与资产验证"]:::suggested
+    BILL["预估/冻结/结算"]:::suggested
+  end
+  subgraph L6["6 模型集成与路由层"]
+    REG["能力注册表/智能路由"]:::suggested
+    SD["Seedance 2.5 名称可见"]:::confirmed
+    OTHER["文本/图像/音频/安全模型"]:::gap
+  end
+  subgraph L7["7 全局上下文与数据层"]
+    SSOT["统一状态源"]:::suggested
+    PC["ProjectConfig"]:::inferred
+    WF["WorkflowState"]:::suggested
+    AC["AssetContext + Versions"]:::suggested
+    BC["BillingContext"]:::suggested
+    EC["EvaluationContext"]:::suggested
+  end
+  subgraph L8["8 知识与共享资产层"]
+    PUBLIC["示例/精选/公共模板"]:::confirmed
+    PRIVATE["用户角色/商品/上传/画布"]:::confirmed
+    RULES["安全/版权/计费规则"]:::inferred
+    KNOW["影视知识/提示词模板"]:::gap
+  end
+  subgraph L9["9 基础设施与治理层"]
+    IAM["鉴权与租户隔离"]:::suggested
+    QUEUE["异步队列/事件总线"]:::suggested
+    STORE["元数据/对象存储/CDN"]:::suggested
+    OBS["追踪/审计/指标"]:::suggested
+  end
+  U -->|"操作"| HOME
+  U -->|"选择"| DRAMA
+  U -->|"进入（会自动建项）"| CANVAS
+  HOME --> CREATE
+  DRAMA --> SHORT
+  HOME --> MKT
+  HOME --> SKILL
+  CANVAS --> PROJECT
+  SHORT --> A2
+  CREATE -.-> A1
+  MKT -.-> A3
+  CANVAS --> A4
+  A2 -.->|"调用候选"| PARSE
+  A4 -.-> NODE
+  CANVAS -->|"写入项目/保存状态"| PROJSVC
+  HIST --> QUERY
+  ASSETUI --> QUERY
+  ORCH -.->|"编排"| GEN
+  GEN -.-> REG
+  REG -.-> SD
+  REG -.-> OTHER
+  PROJSVC -.->|"状态写入"| SSOT
+  QUERY -.->|"读取"| SSOT
+  VALIDATE -.->|"对照"| SSOT
+  SSOT -.-> PC
+  SSOT -.-> WF
+  SSOT -.-> AC
+  SSOT -.-> BC
+  SSOT -.-> EC
+  SKILL --> PUBLIC
+  ASSETUI --> PRIVATE
+  ORCH -.-> RULES
+  ORCH -.-> KNOW
+  SSOT -.-> STORE
+  ORCH -.-> QUEUE
+  ORCH -.-> OBS
+  PRIVATE -.-> IAM
+  classDef confirmed fill:#e4f2e8,stroke:#286149,color:#173b2b,stroke-width:2px;
+  classDef inferred fill:#fff0d3,stroke:#936118,color:#5d3b0d,stroke-width:2px,stroke-dasharray:6 4;
+  classDef suggested fill:#e5edf7,stroke:#315f8b,color:#203f5e,stroke-width:2px,stroke-dasharray:2 4;
+  classDef gap fill:#f6e4e2,stroke:#a5433a,color:#682923,stroke-width:2px;
+</div>
+
+<h2>14. As-Is：当前可证实架构</h2><div class="panel"><ul><li>一个 Web 产品表层整合通用创作、短剧、营销、画布、资产、历史与学习入口。</li><li>首页支持对话、上传/引用素材、技能、偏好和画布开关。</li><li>短剧模块提供四种起始方式和输入限制，但没有后续执行证据。</li><li>自由画布具有节点式对象模型的界面迹象，并带综合助手。</li><li>进入自由画布立即创建并保存项目，浏览与建项没有分离。</li><li>历史、首页项目侧栏和作品资产是不同状态面；它们之间的统一状态源不可见。</li><li>Agent 身份存在于页面命名，但真实 Agent 编排、工具调用和交接无法确认。</li><li>模型层只确认 Seedance 2.5 名称与智能匹配入口，不能确认真实调用。</li></ul></div>
+
+<h2>15. To-Be：建议目标架构</h2><div class="table-wrap"><table><thead><tr><th>目标</th><th>建议机制</th><th>关键收益</th><th>验收指标</th></tr></thead><tbody>
+<tr><td>单一可信状态源</td><td>Project/Workflow/Task/Asset/Billing 状态事件化；各页面只做投影</td><td>消除聊天、画布、历史、资产冲突</td><td>跨页面状态冲突率≈0；可追踪每次变更</td></tr>
+<tr><td>显式确认门</td><td>建项、扣费、覆盖、批量生成、下游执行前结构化确认</td><td>降低意外空项目和误扣费</td><td>所有不可逆动作有 confirmation_id</td></tr>
+<tr><td>依赖图与局部重算</td><td>稳定对象ID、版本、typed references、stale 传播</td><td>修改剧本后只重做受影响资产</td><td>局部修改重算范围可解释；旧版可回退</td></tr>
+<tr><td>完成质量门</td><td>资产存在、状态写入、版本一致、脚本/时长/风格/角色/音画检查</td><td>避免口头完成和不可用成品</td><td>completed 必须附 validation report</td></tr>
+<tr><td>幂等计费执行</td><td>request_id/task_id 与预估、冻结、结算、退款原子绑定</td><td>防止重试重复扣费和重复资产</td><td>重复请求零重复计费</td></tr>
+<tr><td>中断与恢复</td><td>持久工作流、取消令牌、断点恢复、已完成资产保留</td><td>长任务可控</td><td>中断后无新调用；恢复不重复执行</td></tr>
+<tr><td>模型治理</td><td>能力注册表、版本路由、约束与成本策略、回退可解释</td><td>降低模型下线、能力漂移和成本失控</td><td>每次调用可追踪模型版本与路由规则</td></tr>
+<tr><td>私有资产隔离</td><td>租户边界、最小权限、授权引用、撤销与审计</td><td>保护角色、商品、音色等私有内容</td><td>跨租户引用测试100%阻断</td></tr>
+</tbody></table></div>
+
+<h2>16. 风险清单</h2><div class="grid2">
+<div class="panel risk-high"><h3>P0 状态冲突与口头完成</h3><p>历史、项目、画布和资产可能各自显示不同状态；若 Agent 仅凭工具结果宣布完成，会交付不存在的资产。</p><p><b>控制：</b>统一状态源+完成验证门。</p></div>
+<div class="panel risk-high"><h3>P0 重试重复扣费/重复资产</h3><p>缺少幂等和扣费状态时，网络重试可能造成重复生成。</p><p><b>控制：</b>幂等键、冻结/结算账本、未知扣费不自动重试。</p></div>
+<div class="panel risk-high"><h3>P0 中断后继续执行</h3><p>长任务若未传播取消事件，用户中断后仍可能继续消耗额度。</p><p><b>控制：</b>取消令牌、状态守卫、任务事件审计。</p></div>
+<div class="panel risk-high"><h3>P0 私有资产泄漏</h3><p>角色、商品、上传素材若与公共模板或其他用户引用混淆，会产生严重隐私与版权风险。</p><p><b>控制：</b>租户隔离、授权引用、来源与用途审计。</p></div>
+<div class="panel risk-med"><h3>P1 缺少依赖失效</h3><p>剧本或角色变化后，下游视频可能仍引用旧版。</p><p><b>控制：</b>版本化依赖图和 stale 传播。</p></div>
+<div class="panel risk-med"><h3>P1 时长、风格与角色漂移</h3><p>整剧生成容易出现镜头时长、风格、角色连续性和台词不一致。</p><p><b>控制：</b>分项评估、镜头级指标、人工确认门。</p></div>
+<div class="panel risk-med"><h3>P1 安全错误处理不透明</h3><p>若错误被归因于“随机误判”或不给修改建议，用户无法恢复。</p><p><b>控制：</b>可见规则版本、错误分类和合规修正路径。</p></div>
+<div class="panel risk-med"><h3>P1 模型/知识过期</h3><p>技能、模板与模型限制若版本不同步，会导致不可执行参数。</p><p><b>控制：</b>能力注册表、兼容矩阵、知识版本和灰度路由。</p></div>
+</div>
+
+<h2>17. 组件—证据追溯表</h2><div class="table-wrap"><table><thead><tr><th>架构组件</th><th>等级</th><th>证据</th><th>不可越界的结论</th></tr></thead><tbody>
+<tr><td>首页创作工作台</td><td>事实</td><td>E01–E03</td><td>不能确认背后是全能创作Agent</td></tr><tr><td>短剧 Agent 2.0</td><td>事实</td><td>E04,R01–R05</td><td>不能确认单体/编排器或生成链</td></tr><tr><td>营销 Agent</td><td>入口事实</td><td>E01,E02,E09</td><td>不能确认商品图处理流程</td></tr><tr><td>画布综合助手</td><td>身份事实</td><td>E05–E06</td><td>不能确认能创建/修改节点</td></tr><tr><td>画布创建与保存</td><td>执行事实</td><td>E05,E08</td><td>不能确认是 Agent 还是页面服务触发</td></tr><tr><td>节点类型模型</td><td>界面事实</td><td>E05</td><td>不能确认底层图数据库</td></tr><tr><td>历史与资产查询</td><td>界面事实</td><td>E07,E09</td><td>不能确认统一状态源</td></tr><tr><td>Seedance 2.5</td><td>名称事实</td><td>E04</td><td>不能确认本轮调用或唯一模型</td></tr><tr><td>智能模型路由</td><td>入口事实/实现未知</td><td>E02</td><td>不能确认路由算法</td></tr><tr><td>余额/会员</td><td>界面事实</td><td>E10</td><td>不能确认计费规则与扣费时机</td></tr><tr><td>工作流编排/队列</td><td>建议能力</td><td>长任务需求；无直接证据</td><td>不指定供应商或技术栈</td></tr><tr><td>统一状态源/版本/依赖图</td><td>建议能力</td><td>E05,E07–E09,R09–R14</td><td>不冒充现有实现</td></tr><tr><td>质量评估与完成门</td><td>建议能力</td><td>E06 提醒；E10–E11 缺口</td><td>真实评估规则未知</td></tr><tr><td>安全、版权、计费策略服务</td><td>版权/余额提示事实；服务推断</td><td>E04,E10</td><td>不能确认规则引擎</td></tr>
+</tbody></table></div>
+
+<h2>18. 仍然未知</h2><div class="panel"><ol><li>真实 Agent 拓扑：4 个名称是否对应独立 Agent，是否存在主编排器或专用子 Agent。</li><li>短剧上传后真实数据结构、步骤、用户确认门和自动继续边界。</li><li>工具官方名称、参数、幂等、重试、取消、错误分类与写入协议。</li><li>Seedance 2.5 与其他模型的真实路由、版本、时长/分辨率限制、成本和回退。</li><li>生成任务的队列、并发、进度、超时与中断机制。</li><li>剧本、角色、场景、道具、分镜、音频和视频是否使用稳定引用和版本。</li><li>历史、画布、任务和资产库是否共享统一状态源。</li><li>扣费的预估、冻结、结算、失败退款与重复请求规则。</li><li>最终预览、剪辑、下载、发布和作品归档流程。</li><li>安全、版权、隐私、审计、数据保留和用户反馈复用机制。</li></ol><p><b>四步产品拆解到此完成。本报告不继续进入实现、代码、官方 Prompt 或后端技术栈猜测。</b></p></div>
+</main><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({startOnLoad:true,theme:'neutral',securityLevel:'loose',flowchart:{curve:'basis'}});</script></body></html>
